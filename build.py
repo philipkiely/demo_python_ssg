@@ -1,10 +1,11 @@
+import markdown
 import os
 import signal
 import subprocess
 import sys
 import time
-from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
 import webbrowser
 
 ###################
@@ -12,6 +13,7 @@ import webbrowser
 ###################
 
 def build_article():
+    # html = markdown.markdown(your_text_string)
     pass
 
 def copy_assets():
@@ -57,7 +59,6 @@ class BuildHandler(FileSystemEventHandler):
 
 
 if __name__ == "__main__":
-    # --dev, --prod (argparse)
     if len(sys.argv) != 2:
         print("Usage: `python build.py --dev` or `python build.py --prod`")
         exit

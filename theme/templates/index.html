@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Martial Arts Wiki</h2>
+{% for article in articles %}
+    <div class="row">
+        <div class="col-md-3">
+            <img class="img-fluid" src="/img/{{ article.cover }}">
+        </div>
+        <div class="col-md-9">
+            <h3><a href="/{{ article.slug }}</h3>">{{ article.title }}</a></h3>
+            <p>{{ article.content|truncate(100) }}</p>
+        </div>
+    </div>
+{% endfor %}
+{% endblock %}
