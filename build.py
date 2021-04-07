@@ -1,3 +1,5 @@
+import datetime
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 import markdown
 import os
 import signal
@@ -12,15 +14,78 @@ import webbrowser
 # Build Functions #
 ###################
 
-def build_article():
-    # html = markdown.markdown(your_text_string)
+def parse_article_metadata(filename):
+    f = open("src/posts/" + filename, "r")
+    contents = f.readlines()
+    f.close()
+    parsed = {}
+    parsed["title"] = contents[0].split(": ")[1]
+    parsed["slug"] = contents[1].split(": ")[1]
+    parsed["modified"] = datetime.datetime.strptime(
+        contents[2].split(": ")[1][:-1], "%d-%m-%Y")
+    parsed["cover"] = contents[3].split(": ")[1]
+    parsed["content"] = markdown.markdown("".join(contents[4:]))
+    return parsed
+
+def generate_page(template, data, route):
+    # Apply data to template and store it at route
+
+    # Refactor previous two into this and use in incremental
     pass
 
+def build_article(env, article):
+    html = env.get_template("post.html").render(article=article)
+    f = open("dist/{}.html".format(article["slug"][:-1]), "w")
+    f.write(html)
+    f.close()
+    return
+
+def build_index(env, articles):
+    html = env.get_template("index.html").render(articles=articles)
+    f = open("dist/index.html", "w")
+    f.write(html)
+    f.close()
+    return
+
 def copy_assets():
+    if os.path.exists("dist/assets"):
+        os.system("rm dist/assets/*")
+    else:
+        os.makedirs("dist/assets")
+    os.system("cp -r src/assets dist/")
+    os.system("cp -r theme/assets dist/")
+    print("Assets Copied")
     pass
 
 def build_site():
-    # mkdir dist but also wipe it
+    if os.path.exists("dist"):
+        os.system("rm dist/*")
+    else:
+        os.makedirs("dist")
+    env = Environment(
+        loader=FileSystemLoader(["theme/templates/"]),
+        autoescape=select_autoescape(["html", "xml"]),
+        auto_reload=True
+    )
+    posts = subprocess.run(
+        ["ls", "src/posts"],
+        capture_output=True
+    ).stdout.decode('utf-8').split('\n')
+    posts = [p for p in posts if p != ""]
+    articles = []
+    for post in posts:
+        articles.append(parse_article_metadata(post))
+    articles.sort(key=lambda x: x["modified"], reverse=True)
+    build_index(env, articles)
+    for article in articles:
+        build_article(env, article)
+    copy_assets()
+    pass
+
+def build_article_incremental():
+    pass
+
+def build_index_incremental():
     pass
 
 #######################
@@ -54,9 +119,22 @@ class BuildHandler(FileSystemEventHandler):
         if event.is_directory:
             return
         if "/dist/" not in event.src_path:
-            print("build")
-        # Incremental builds (only build the single post affected)
+            build_site()
 
+
+class IncrementalBuildHandler(FileSystemEventHandler):
+
+    def on_any_event(self, event):
+        if event.is_directory:
+            return
+        if "/dist/" not in event.src_path:
+            if "/assets/" in event.src_path:
+                copy_assets()
+            elif "/posts/" in event.src_path:
+                build_article(event.src_path)
+                build_index()
+            else:
+                build_site()
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -64,7 +142,7 @@ if __name__ == "__main__":
         exit
     elif sys.argv[1] == "--prod":
         build_site()
-        # Deploy
+        print("Site ready to deploy from /dist/")
     elif sys.argv[1] == "--dev":
         print("Initializing Static Site Generator")
         src_watcher = Watcher(".", BuildHandler())

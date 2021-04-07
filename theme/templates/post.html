@@ -2,9 +2,9 @@
 
 {% block content %}
     <h2><a href="/">Martial Arts Wiki</a> > {{ article.title }}</h2>
-    <img class="img-fluid" src="/img/{{ article.cover }}">
+    <img class="img-fluid" src="/assets/{{ article.cover }}">
     <br>
-    {{ article.content }}
+    {{ article.content|safe }}
     <br>
-    <p><i>Last Updated: {{ {{ article.modified }} }}</i></p>
+    <p><i>Last Updated: {{ article.modified.strftime('%d %B %Y') }}</i></p>
 {% endblock %}
