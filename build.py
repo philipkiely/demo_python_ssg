@@ -2,7 +2,9 @@ import datetime
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 import markdown
 import os
+import pathlib
 import signal
+import shutil
 import subprocess
 import sys
 import time
@@ -15,7 +17,7 @@ import webbrowser
 ###################
 
 def parse_article_metadata(filename):
-    f = open("src/posts/" + filename, "r")
+    f = open(filename, "r")
     contents = f.readlines()
     f.close()
     parsed = {}
@@ -53,24 +55,22 @@ def build_index(articles):
     )
 
 def copy_assets():
-    if os.path.exists("dist/assets"):
-        os.system("rm dist/assets/*")
-    else:
-        os.makedirs("dist/assets")
-    os.system("cp -r src/assets dist/")
-    os.system("cp -r theme/assets dist/")
+    assets = pathlib.Path("theme/assets")
+    img = pathlib.Path("src/img")
+    output = pathlib.Path("dist/assets")
+    output_img = pathlib.Path("dist/assets/img")
+    if output.exists():
+        shutil.rmtree(output)
+    shutil.copytree(assets, output)
+    shutil.copytree(img, output_img)
     print("Assets Copied")
 
 def build_site():
-    if os.path.exists("dist"):
-        os.system("rm dist/*")
-    else:
-        os.makedirs("dist")
-    posts = subprocess.run(
-        ["ls", "src/posts"],
-        capture_output=True
-    ).stdout.decode('utf-8').split('\n')
-    posts = [p for p in posts if p != ""]
+    dist = pathlib.Path("dist")
+    if dist.exists():
+        shutil.rmtree(dist)
+    os.mkdir("dist")
+    posts = pathlib.Path("src/posts").iterdir()
     articles = []
     for post in posts:
         articles.append(parse_article_metadata(post))
@@ -82,14 +82,10 @@ def build_site():
 
 def build_article_incremental(article):
     if os.path.exists("dist/index.html"):
-        os.system("rm dist/index.html")
+        os.remove("dist/index.html")
     if os.path.exists("dist/{}".format(article)):
-        os.system("rm dist/{}".format(article))
-    posts = subprocess.run(
-        ["ls", "src/posts"],
-        capture_output=True
-    ).stdout.decode('utf-8').split('\n')
-    posts = [p for p in posts if p != ""]
+        os.remove("dist/{}".format(article))
+    posts = pathlib.Path("src/posts").iterdir()
     articles = []
     for post in posts:
         articles.append(parse_article_metadata(post))
